@@ -1,0 +1,5 @@
+include LICENSE
+include README.md
+recursive-include mditor/static *
+recursive-include mditor/templates *
+# https://packaging.python.org/en/latest/guides/using-manifest-in/

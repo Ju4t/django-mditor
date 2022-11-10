@@ -1,0 +1,200 @@
+{% load static %}
+<style>
+    .mditor {
+        max-width: {{ config.MaxWidth }};
+        min-width: {{ config.MinWidth }};
+        background: var(--body-bg) !important;
+        border: 1px solid var(--border-color)
+    }
+
+    .mditor .head {
+        background: var(--body-bg) !important;
+        border-bottom: 1px solid var(--border-color)
+    }
+
+    .mditor .toolbar .item {
+        color: var(--body-fg) !important;
+    }
+
+    .mditor .editor .textarea {
+        color: var(--body-fg) !important;
+    }
+
+    .mditor.split .editor {
+        border: 1px solid var(--border-color)
+    }
+
+    .mditor .toolbar .item:active, .mditor .toolbar .item.active {
+        background: var(--body-bg) !important;
+    }
+
+    @media (max-width: 1024px) {
+        .mditor .editor textarea {
+            max-height: 100% !important;
+        }
+    }
+
+    .markdown-body {
+        color: var(--body-fg) !important;
+    }
+
+    .markdown-body ul {
+        margin-left: 0px !important;
+    }
+
+    .markdown-body ul li {
+        list-style: disc !important;
+    }
+
+    .markdown-body ul ul li {
+        list-style: circle !important;
+    }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4,
+    .markdown-body h5,
+    .markdown-body h6 {
+        background: var(--body-bg) !important;
+        color: var(--body-fg) !important;
+    }
+
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4 {
+        padding: 0px !important;
+    }
+
+    .markdown-body h5 {
+        letter-spacing: 0px !important;
+        text-transform: none !important;
+        font-size: 1em !important;
+    }
+
+    .markdown-body h6 {
+        font-size: 1em !important;
+        color: #777 !important;
+    }
+
+    .markdown-body pre {
+        background: var(--border-color) !important;
+    }
+
+</style>
+<div data-field-id="{{ widget.attrs.id }}"
+        {#     style="display: inline-block;"#}
+>
+    <textarea id="editor" name="{{ widget.name }}">{% if widget.value %}{{ widget.value }}{% endif %}</textarea>
+</div>
+<script>
+    var textarea = document.getElementById('editor');
+    var mditor = Mditor.fromTextarea(textarea);
+    mditor.on('ready', function () {
+        mditor.width = "{{ config.width }}"; // auto
+        mditor.height = "{{ config.height }}";
+        mditor.preview = {{ config.preview }};
+        mditor.split = {{ config.split }};
+        mditor.fullscreen = {{ config.fullscreen }};
+
+        // 修改 帮助，http://mditor.com/（django-mditor）
+        let btn_help = mditor.toolbar.getItem('help');
+        btn_help.handler = () => {
+            window.open('https://developer.aliyun.com/article/721348', '_blank');
+        };
+
+        let btn_image = mditor.toolbar.getItem('image')
+        btn_image.handler = () => {
+            // this.editor.wrapSelectText('![alt](', ')');
+            var input = document.createElement("input");
+            input.type = "file";
+            // input.accept = "image/png, image/gif, image/jpg, image/jpeg";
+            input.accept = "image/*";
+            input.name = 'mditor-image-file'
+            input.click();
+            input.addEventListener("change", function () {
+                // 上传
+                var url = '/mditor/uploads/?guid=' + (new Date).getTime(),
+                    file = this.files[0],
+                    xhr = new XMLHttpRequest(),
+                    form_data = new FormData();
+                // console.log(file.name)
+                // mditor.editor.wrapSelectText("![图片备用地址](", ")")
+
+                xhr.upload.addEventListener("progress", function (evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = Math.round(evt.loaded * 100 / evt.total);
+                        console.log('上传中' + percentComplete + "%")
+                        //$('#progress').innerHTML = '上传中' + percentComplete + "%";
+                    } else {
+                        console.log('无法计算')
+                        // $('#progress').innerHTML = '无法计算';
+                    }
+                }, false);
+
+                // 请求完成后执行的操作
+                xhr.addEventListener("load", function (evt) {
+                    var message = evt.target.responseText,
+                        obj = eval("(" + message + ")");
+                    if (obj.success == 1) {
+                        mditor.editor.insertBeforeText("![" + file.name + "](" + obj.url + ")\n")
+                        // alert("上传成功!");
+                    } else {
+                        alert(obj.message);
+                    }
+                }, false);
+
+                // 请求error
+                xhr.addEventListener("error", uploadFailed, false);
+                // 请求中断
+                xhr.addEventListener("abort", uploadCanceled, false);
+                // 发送请求
+                xhr.open("POST", url);
+                form_data.append("mditor-image-file", file);
+                xhr.send(form_data);
+
+                // 请求error
+                function uploadFailed(evt) {
+                    alert("上传出错.");
+                }
+
+                // 请求中断
+                function uploadCanceled(evt) {
+                    alert("上传已由用户或浏览器取消删除连接.");
+                }
+            })
+        };
+
+        // 定制按钮
+        mditor.toolbar.addItem({
+            name: 'center',
+            title: '居中',
+            icon: 'align-center',
+            // key: 'shift+alt+c',
+            handler: function handler() {
+                this.editor.wrapSelectText('<p style="text-align:center">', '</p>');
+            }
+        });
+
+        mditor.toolbar.removeItem('help', 'preview');
+        mditor.toolbar.addItem(btn_help);
+
+        // console.log('mditor', mditor);
+
+        // mditor.value = '** hello **';
+        // console.log('toolbar', mditor.toolbar);
+
+        mditor.on('changed', function () {
+            // console.log('changed', mditor.value);
+        });
+        mditor.editor.on('drop', function (event) {
+            console.log('drop', event);
+        });
+        mditor.editor.on('paste', function (event) {
+            console.log('paste', event.clipboardData.types);
+        });
+        mditor.on('head-dblclick', function () {
+            console.log('head-dblclick');
+        });
+    });
+</script>

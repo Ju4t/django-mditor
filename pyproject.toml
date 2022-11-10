@@ -1,0 +1,27 @@
+[build-system]
+# 方式一：通过 MANIFEST.in 声明项目包含的文件
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+# 方式二：暂时不知道如何包含文件夹
+#requires = ["hatchling"]
+#build-backend = "hatchling.build"
+
+[project]
+name = "django-mditor"
+version = "0.0.12"
+authors = [
+    { name = "敬晓兵", email = "ju4t@qq.com" },
+]
+description = "A simple Django app to edit markdown text."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://labdoc.cc/article/10/"
+"Bug Tracker" = "https://github.com/ju4t/mditor/issues"
